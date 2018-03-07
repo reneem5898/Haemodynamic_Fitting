@@ -6,23 +6,21 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 clear all
-diary off
-
-parentDir = 'P:\Data\OSU Models\HFPEF';
-
-% Use log file to save details of haemodynamic fitting
-logFile = sprintf('%s/haemo_log_file.txt', parentDir);
-delete(logFile); % Delete to start log file from scratch
-diary(logFile);
+% diary off
+% 
+% % Use log file to save details of haemodynamic fitting
+% logFile = 'P:/UA - PhD/OSU_Optimisation/haemo_log_file.txt';
+% delete(logFile); % Delete to start log file from scratch
+% diary(logFile);
 
 
 % File with cardiac events chosen from MRI cine dataset
-fid = fopen(sprintf('%s/OSU_Pig_Names_Cardiac_Events.txt', parentDir);
+fid = fopen('P:/UA - PhD/OSU_Optimisation/OSU_Pig_Names_Cardiac_Events.txt');
 allLines = textscan(fid, '%s %s %d %d %d %d %d');
 
 
 % Create matrix of relevant study frame info for material parameter optimisation
-studyNamesFile = fopen(sprintf('%s/StudyNames.txt', parentDir), 'w');
+studyNamesFile = fopen('P:/UA - PhD/OSU_Optimisation/StudyNames.txt', 'w');
 
 
 for i = 1:size(allLines{1},1)
@@ -81,7 +79,7 @@ for i = 1:size(allLines{1},1)
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %% Run haemodynamic fitting code - main function
-    main_HaemoFitting(directory, model_directory, dsMRI, edMRI, esMRI, eivcMRI, eivrMRI, outPressureFile);
+    [dsMRI, edMRI, esMRI] = main_HaemoFitting(directory, model_directory, dsMRI, edMRI, esMRI, eivcMRI, eivrMRI, outPressureFile);
     
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -100,4 +98,4 @@ end
 % Close study frames file
 fclose(studyNamesFile);
 
-diary off
+% diary off
