@@ -561,7 +561,6 @@ mri_time = linspace(1,RR_mean,numFrames)/1000;
 V = getModelVolumes(model_directory, numFrames);
 
 % If ED is not the first frame, make it the first frame (fix volumes)
-timePointsOld = [];
 if edMRI ~= 1
 
     % Save old time points and old volumes for shifting data back
@@ -771,7 +770,7 @@ saveas(FH10, sprintf('%s/volume-mri-cardiac-events.png', directory));
 %% Check to see if MRI points were shifted. If so, shift pressure to be
 % aligned with MRI time points
 
-if ~isempty(timePointsOld)
+if exist('timePointsOld', 'var')
     shiftTime = timePointsOld(1) - edMRI;
     LVP_average = [LVP_average((numFrames - shiftTime + 1):end); LVP_average(1:(numFrames-shiftTime))]; % Shift average pressures to be aligned with MRI time points
     V = V_Old; % Use old volumes
