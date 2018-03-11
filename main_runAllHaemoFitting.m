@@ -17,7 +17,7 @@ diary(logFile);
 
 
 % File with cardiac events chosen from MRI cine dataset
-fid = fopen(sprintf('%s/OSU_Pig_Names_Cardiac_Events.txt', parentDir);
+fid = fopen(sprintf('%s/OSU_Pig_Names_Cardiac_Events_2.txt', parentDir));
 allLines = textscan(fid, '%s %s %d %d %d %d %d');
 
 
