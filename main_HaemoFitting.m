@@ -399,7 +399,7 @@ AO_cycles = extract_individual_cycles(AO_time, AO_R_positions, AO_cycles_to_keep
 FH5 = figure('Position', [100, 100, 600, 600]);
 subplot(2,1,1)
 for i = 1:size(LV_cycles,2)
-    plot(LV_cycles{1,i}, LV_cycles{2,i}, '-', 'markersize', 2);
+    plot(LV_cycles{1,i}, LV_cycles{2,i}, 'b-', 'markersize', 2);
     hold on;
 end
 title('All LV Pressure Traces')
@@ -410,7 +410,7 @@ hold off;
 % Check: Overlay all AO pressure traces
 subplot(2,1,2)
 for i = 1:size(AO_cycles,2)
-    plot(AO_cycles{1,i}, AO_cycles{2,i}, '-', 'markersize', 2);
+    plot(AO_cycles{1,i}, AO_cycles{2,i}, 'b-', 'markersize', 2);
     hold on;
 end
 title('All Aortic Pressure Traces')
@@ -518,7 +518,7 @@ end
 FH6 = figure('Position', [100, 100, 600, 600]);
 subplot(2,1,1)
 for i = 1:size(LV_cycles,2)
-    plot(LV_cycles{1,i}, LV_cycles{2,i}, '-', 'markersize', 2);
+    plot(LV_cycles{1,i}, LV_cycles{2,i}, 'b-', 'markersize', 2);
     hold on;
     scatter(LV_cycles{1,i}(DS(i)), LV_cycles{2,i}(DS(i)), 'ro', 'filled')
     scatter(LV_cycles{1,i}(ED(i)), LV_cycles{2,i}(ED(i)), 'ro', 'filled')
@@ -532,7 +532,7 @@ hold off;
 % Overlay all AO pressure traces
 subplot(2,1,2)
 for i = 1:size(AO_cycles,2)
-    plot(AO_cycles{1,i}, AO_cycles{2,i}, '-', 'markersize', 2);
+    plot(AO_cycles{1,i}, AO_cycles{2,i}, 'b-', 'markersize', 2);
     hold on;
     scatter(AO_cycles{1,i}(eIVC(i)), AO_cycles{2,i}(eIVC(i)), 'ro', 'filled')
     scatter(AO_cycles{1,i}(ES(i)), AO_cycles{2,i}(ES(i)), 'ro', 'filled')
@@ -754,13 +754,13 @@ saveas(FH9, sprintf('%s/pv-loop.png', directory));
 
 %%%%%%%%%%%%%%%%%%% Volume with cardiac events %%%%%%%%%%%%%%%%%%
 FH10 = figure;
-plot(mri_time, V, 'k*-')
+plot(mri_time, V, 'ksq-', 'LineWidth', 2, 'MarkerSize', 3, 'MarkerEdgeColor', 'k', 'MarkerFaceColor', 'k')
 hold on
-scatter(mri_time(dsMRI), V(dsMRI), 30, 'ro', 'filled')
-scatter(mri_time(edMRI), V(edMRI), 30, 'ro', 'filled')
-scatter(mri_time(esMRI), V(esMRI), 30, 'ro', 'filled')
-scatter(mri_time(eivrMRI), V(eivrMRI), 30, 'ro', 'filled')
-scatter(mri_time(eivcMRI), V(eivcMRI), 30, 'ro', 'filled')
+scatter(mri_time(dsMRI), V(dsMRI), 50, 'ro', 'filled')
+scatter(mri_time(edMRI), V(edMRI), 50, 'ro', 'filled')
+scatter(mri_time(esMRI), V(esMRI), 50, 'ro', 'filled')
+scatter(mri_time(eivrMRI), V(eivrMRI), 50, 'ro', 'filled')
+scatter(mri_time(eivcMRI), V(eivcMRI), 50, 'ro', 'filled')
 xlabel('Time (s)', 'FontSize', 16)
 ylabel('Volume (mL)', 'FontSize', 16)
 set(gca, 'FontSize', 12)

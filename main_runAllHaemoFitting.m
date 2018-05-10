@@ -17,7 +17,7 @@ diary(logFile);
 
 
 % File with cardiac events chosen from MRI cine dataset
-fid = fopen(sprintf('%s/OSU_Pig_Names_Cardiac_Events_2.txt', parentDir));
+fid = fopen(sprintf('%s/OSU_Pig_Names_Cardiac_Events_3.txt', parentDir));
 allLines = textscan(fid, '%s %s %d %d %d %d %d');
 
 
@@ -112,8 +112,8 @@ plot_PressureVolumes(squeeze(p(:,2,:)), v, parentDir, '-Unshifted', []);
 
 % Create plots for shifted and unshifted pressures with cases removed which
 % had low identifiability
-plot_PressureVolumes(squeeze(p(:,1,:)), v, parentDir, [], [1, 2, 3, 21]);
-plot_PressureVolumes(squeeze(p(:,2,:)), v, parentDir, '-Unshifted', [1, 2, 3, 21]);
+% plot_PressureVolumes(squeeze(p(:,1,:)), v, parentDir, [], [1, 2, 3, 21]);
+% plot_PressureVolumes(squeeze(p(:,2,:)), v, parentDir, '-Unshifted', [1, 2, 3, 21]);
 
 % Save all resulting pressures and volumes
 save(sprintf('%s/pressures-volumes.mat', parentDir), 'p', 'v');
