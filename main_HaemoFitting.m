@@ -1,4 +1,4 @@
-function main_HaemoFitting(directory, model_directory, dsMRI, edMRI, esMRI, eivcMRI, eivrMRI, outPressureFile)
+function [registeredPressure, V, LVP_average_unshifted] = main_HaemoFitting(directory, model_directory, dsMRI, edMRI, esMRI, eivcMRI, eivrMRI, outPressureFile)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % This function:
@@ -756,11 +756,11 @@ saveas(FH9, sprintf('%s/pv-loop.png', directory));
 FH10 = figure;
 plot(mri_time, V, 'k*-')
 hold on
-scatter(mri_time(dsMRI), V(dsMRI), 5, 'ro', 'filled')
-scatter(mri_time(edMRI), V(edMRI), 5, 'ro', 'filled')
-scatter(mri_time(esMRI), V(esMRI), 5, 'ro', 'filled')
-scatter(mri_time(eivrMRI), V(eivrMRI), 5, 'ro', 'filled')
-scatter(mri_time(eivcMRI), V(eivcMRI), 5, 'ro', 'filled')
+scatter(mri_time(dsMRI), V(dsMRI), 30, 'ro', 'filled')
+scatter(mri_time(edMRI), V(edMRI), 30, 'ro', 'filled')
+scatter(mri_time(esMRI), V(esMRI), 30, 'ro', 'filled')
+scatter(mri_time(eivrMRI), V(eivrMRI), 30, 'ro', 'filled')
+scatter(mri_time(eivcMRI), V(eivcMRI), 30, 'ro', 'filled')
 xlabel('Time (s)', 'FontSize', 16)
 ylabel('Volume (mL)', 'FontSize', 16)
 set(gca, 'FontSize', 12)

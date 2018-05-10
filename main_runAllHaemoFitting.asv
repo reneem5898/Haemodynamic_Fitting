@@ -106,16 +106,45 @@ end
 % Close study frames file
 fclose(studyNamesFile);
 
-% Create plots for shifted and unshifted pressures
-plot_PressureVolumes(squeeze(p(:,1,:)), v, parentDir, [], []);
-plot_PressureVolumes(squeeze(p(:,2,:)), v, parentDir, '-Unshifted', []);
+% Plot all pressure-volume loops together
+FH = figure;
+for i = 1:3:size(allLines{1},1)
+    h1 = plot(v(i,:), p(i,1,:), 'r-o', 'MarkerSize', 3, 'MarkerEdgeColor', 'r', 'MarkerFaceColor', 'r');
+    hold on
+end
+for i = 2:3:size(allLines{1},1)
+    h2 = plot(v(i,:), p(i,1,:), 'b-o', 'MarkerSize', 3, 'MarkerEdgeColor', 'b', 'MarkerFaceColor', 'b');
+    hold on
+end
+for i = 3:3:size(allLines{1},1)
+    h3 = plot(v(i,:), p(i,1,:), 'g-o', 'MarkerSize', 3, 'MarkerEdgeColor', 'g', 'MarkerFaceColor', 'g');
+    hold on
+end
+xlabel('Volume (mL)', 'FontSize', 12)
+ylabel('Pressure (kPa)', 'FontSize', 12)
+legend([h1, h2, h3], {'Bx', 'M1', 'M2'}, 'Location', 'Best')
+saveas(FH, sprintf('%s/PV-Loops.png', parentDir));
 
-% Create plots for shifted and unshifted pressures with cases removed which
-% had low identifiability
-plot_PressureVolumes(squeeze(p(:,1,:)), v, parentDir, [], [1, 2, 3, 21]);
-plot_PressureVolumes(squeeze(p(:,2,:)), v, parentDir, '-Unshifted', [1, 2, 3, 21]);
-
-% Save all resulting pressures and volumes
-save(sprintf('%s/pressures-volumes.mat', parentDir), 'p', 'v');
+% Plot all diastolic portions of the PV loops together
+FH2 = figure;
+for i = 1:3:size(allLines{1},1)
+    ds = find(p(i,:) == 0);
+    h1 = plot(v(i,ds:end), p(i,1,ds:end), 'r-o', 'MarkerSize', 3, 'MarkerEdgeColor', 'r', 'MarkerFaceColor', 'r');
+    hold on
+end
+for i = 2:3:size(allLines{1},1)
+    ds = find(p(i,:) == 0);
+    h2 = plot(v(i,ds:end), p(i,ds:end), 'b-o', 'MarkerSize', 3, 'MarkerEdgeColor', 'b', 'MarkerFaceColor', 'b');
+    hold on
+end
+for i = 3:3:size(allLines{1},1)
+    ds = find(p(i,:) == 0);
+    h3 = plot(v(i,ds:end), p(i,ds:end), 'g-o', 'MarkerSize', 3, 'MarkerEdgeColor', 'g', 'MarkerFaceColor', 'g');
+    hold on
+end
+xlabel('Volume (mL)', 'FontSize', 12)
+ylabel('Pressure (kPa)', 'FontSize', 12)
+legend([h1, h2, h3], {'Bx', 'M1', 'M2'}, 'Location', 'Best')
+saveas(FH2, sprintf('%s/PV-Diastole.png', parentDir));
 
 diary off
