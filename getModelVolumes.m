@@ -18,11 +18,10 @@ volume_dir = sprintf('%s/volumes/info/', directory);
 % Choose *_ca* file from the CIM model that you want to use
 file_spec = sprintf('%s/*_ca*', volume_dir);
 fname = getlatestfile(file_spec);
-%fname = uigetfile(file_spec);
 
 % Print to log file
 disp('CIM model volume file:')
-disp(sprintf('%s/%s', volume_dir, fname));
+fprintf('%s/%s', volume_dir, fname);
 
 % Read file
 fid = fopen(sprintf('%s/%s', volume_dir, fname), 'r');
@@ -30,7 +29,7 @@ i = 1; % counter
 
 % Read in junk lines - HARD CODED FOR THE FORMAT OF CIM MODEL FILE: <patient name>_model_ca.model_<model name>
 junk = fgets(fid);
-while isempty(strfind(junk, 'TOTAL')) % loop until the word 'TOTAL' is found
+while ~contains(junk, 'TOTAL') % loop until the word 'TOTAL' is found
     junk = fgets(fid);
     i = i + 1;
 end

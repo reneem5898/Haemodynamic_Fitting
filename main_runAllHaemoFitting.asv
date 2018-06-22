@@ -10,11 +10,8 @@ diary off
 
 parentDir = 'P:\Data\OSU Models\HFPEF';
 
-% Number of frames in cine dataset
-numFrames = 20;
-
 % Use log file to save details of haemodynamic fitting
-logFile = sprintf('%s/haemo_log_file_Study2.txt', parentDir);
+logFile = sprintf('%s/haemo_log_file.txt', parentDir);
 delete(logFile); % Delete to start log file from scratch
 diary(logFile);
 
@@ -25,11 +22,12 @@ allLines = textscan(fid, '%s %s %d %d %d %d %d');
 
 
 % Create matrix of relevant study frame info for material parameter optimisation
-studyNamesFile = fopen(sprintf('%s/StudyNames_Study2.txt', parentDir), 'w');
+studyNamesFile = fopen(sprintf('%s/StudyNames.txt', parentDir), 'w');
 
 % Save all pressures and volumes
-p = zeros(size(allLines{1},1), 2, numFrames); % (# animals x 3 time points (bx, m1, m2)), # cardiac time points
-v = zeros(size(allLines{1},1), numFrames); % (# animals, 3 time points (bx, m1, m2), # cardiac time points
+p = zeros(size(allLines{1},1), 2, 30); % (8 animals x 3 time points (bx, m1, m2)), 30 cardiac time points
+v = zeros(size(allLines{1},1), 30); % 8 animals, 3 time points (bx, m1, m2), 30 cardiac time points
+
 
 for i = 1:size(allLines{1},1)
     
@@ -104,7 +102,7 @@ for i = 1:size(allLines{1},1)
     studyName = sprintf('%s', tmp{end});
     
     % Save DS, ED, ES and total number of frames
-    studyFrames = [dsMRI, edMRI, esMRI, numFrames];
+    studyFrames = [dsMRI, edMRI, esMRI, 30];
     
     % Write study name and relevant frame numbers to a file
     fprintf(studyNamesFile, '%s\t', studyName);
