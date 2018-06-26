@@ -33,7 +33,7 @@ t = repmat(mri_time(edMRI:esMRI),size(ed2es,1),1);
 scatter(t(:), ed2es(:), 'g*')
 hold on
 % Plot ES to DS
-t = repmat(mri_time((esMRI+1):dsMRI),size(es2ds,1),1);
+t = repmat(mri_time((esMRI+1):(dsMRI-1)),size(es2ds,1),1);
 scatter(t(:), es2ds(:), 'm*')
 % Plot DS to ED
 if edMRI == 1
@@ -58,7 +58,7 @@ t = repmat(V(edMRI:esMRI)',size(ed2es,1),1);
 scatter(t(:), ed2es(:), 'g*')
 hold on
 % Plot ES to eIVR
-t = repmat(V((esMRI+1):dsMRI)',size(es2ds,1),1);
+t = repmat(V((esMRI+1):(dsMRI-1))',size(es2ds,1),1);
 scatter(t(:), es2ds(:), 'm*')
 % Plot DS to ED
 if edMRI == 1

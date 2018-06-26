@@ -11,25 +11,29 @@ diary off
 parentDir = 'P:\Data\OSU Models\HFPEF';
 
 % Number of frames in cine dataset
-numFrames = 20;
+numFrames = 30;
 
 % Use log file to save details of haemodynamic fitting
-logFile = sprintf('%s/haemo_log_file_Study2.txt', parentDir);
+logFile = sprintf('%s/haemo_log_file_all.txt', parentDir);
 delete(logFile); % Delete to start log file from scratch
 diary(logFile);
 
 
 % File with cardiac events chosen from MRI cine dataset
-fid = fopen(sprintf('%s/OSU_Pig_Names_Cardiac_Events_Study2.txt', parentDir));
+fid = fopen(sprintf('%s/OSU_Pig_Names_Cardiac_Events_all.txt', parentDir));
 allLines = textscan(fid, '%s %s %d %d %d %d %d');
 
 
 % Create matrix of relevant study frame info for material parameter optimisation
-studyNamesFile = fopen(sprintf('%s/StudyNames_Study2.txt', parentDir), 'w');
+studyNamesFile = fopen(sprintf('%s/StudyNames.txt', parentDir), 'w');
 
-% Save all pressures and volumes
+% Initialise variables for pressures and volumes
 p = zeros(size(allLines{1},1), 2, numFrames); % (# animals x 3 time points (bx, m1, m2)), # cardiac time points
 v = zeros(size(allLines{1},1), numFrames); % (# animals, 3 time points (bx, m1, m2), # cardiac time points
+
+% Initialise variables to save time points and number of frames
+allTimePoints = {};
+allStudyFrames = zeros(size(allLines{1},1),1);
 
 for i = 1:size(allLines{1},1)
     
@@ -58,30 +62,16 @@ for i = 1:size(allLines{1},1)
     disp(tp)
     
     % Directory to find pressure data and also where figures, mat files, etc. will be saved
-    %directory = sprintf('P:/Data/OSU Models/HFPEF/%s/%s/Young', animal, tp);
-    directory = sprintf('P:/Data/OSU Models/HFPEF/%s/%s/Pressure Measurements', animal, tp);
-    
-%     % Get subdirectories in image dir
-%     AllFiles = dir(sprintf('%s/../CINE', directory));
-% %     AllFiles = dir(directory);
-%     filenames = {AllFiles.name};
-%     subdirs = filenames([AllFiles.isdir]);
-%     subdirs(ismember(subdirs,{'.','..'})) = [];
-%     
-% %     % For dataset #1
-% %     for j = 1:length(subdirs)
-% %         if strfind(subdirs{j}, 'Cine_SAX')
-% %             % Image directory - where to find MR SHORT AXIS images for dataset
-% %             MR_directory = sprintf('%s/%s', directory, subdirs{j});
-% %         end
-% %     end
-%     
-%     % For dataset #2
-%     MR_directory = sprintf('%s/%s', directory, subdirs{2});
-%     
+    directory = sprintf('P:/Data/OSU Models/HFPEF/%s/%s/Young', animal, tp);
+    if ~exist(directory, 'dir')
+        directory = sprintf('P:/Data/OSU Models/HFPEF/%s/%s/Pressure Measurements', animal, tp);
+    end
     
     % CIM model directory - where to find CIM model files for specific case/volunteer/animal/etc.
-    model_directory = sprintf('C:/AMRG/CIM_81_WARP/CIM_DATA/%s_HFPEF_%s*', animal, tp);
+    model_directory = sprintf('C:/AMRG/CIM_81_WARP/CIM_DATA/%s_HFPEF_%s', animal, tp);
+    if ~exist(model_directory, 'dir')
+        model_directory = sprintf('C:/AMRG/CIM_81_WARP/CIM_DATA/%s_HFPEF_%s+mre', animal, tp);
+    end
     
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -95,16 +85,21 @@ for i = 1:size(allLines{1},1)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %% Run haemodynamic fitting code - main function
     [pressure, volume, pressure_unshifted] = main_HaemoFitting(directory, model_directory, dsMRI, edMRI, esMRI, eivcMRI, eivrMRI, outPressureFile);
-    p(i,1,:) = pressure(:,2);
-    p(i,2,:) = pressure_unshifted;
-    v(i,:) = volume;
+    p(i,1,1:size(pressure,1)) = pressure(:,2);
+    p(i,2,1:size(pressure,1)) = pressure_unshifted;
+    v(i,1:size(volume,1)) = volume;
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %% Save list of study names: <animal>_<tp>
     studyName = sprintf('%s', tmp{end});
     
     % Save DS, ED, ES and total number of frames
-    studyFrames = [dsMRI, edMRI, esMRI, numFrames];
+    studyFrames = [dsMRI, edMRI, esMRI, size(pressure,1)];
+    
+    % Create a full list of all time points (Bx, M1 and M2) and frame 
+    % numbers for each study - used for organising plots at the end
+    allTimePoints{i} = tp;
+    allStudyFrames(i) = size(pressure,1);
     
     % Write study name and relevant frame numbers to a file
     fprintf(studyNamesFile, '%s\t', studyName);
@@ -116,15 +111,18 @@ end
 fclose(studyNamesFile);
 
 % Create plots for shifted and unshifted pressures
-plot_PressureVolumes(squeeze(p(:,1,:)), v, parentDir, [], []);
-plot_PressureVolumes(squeeze(p(:,2,:)), v, parentDir, '-Unshifted', []);
+plot_PressureVolumes(squeeze(p(:,1,:)), v, parentDir, [], [], allTimePoints, allStudyFrames);
+plot_PressureVolumes(squeeze(p(:,2,:)), v, parentDir, '-Unshifted', [36], allTimePoints, allStudyFrames);
+
+% Create plots - distinguishing results from each study
+plot_PressureVolumes_Study(squeeze(p(:,1,:)), v, parentDir, [], [], allTimePoints, allStudyFrames);
 
 % Create plots for shifted and unshifted pressures with cases removed which
 % had low identifiability
-% plot_PressureVolumes(squeeze(p(:,1,:)), v, parentDir, [], [1, 2, 3, 21]);
-% plot_PressureVolumes(squeeze(p(:,2,:)), v, parentDir, '-Unshifted', [1, 2, 3, 21]);
+% plot_PressureVolumes(squeeze(p(:,1,:)), v, parentDir, [], [1, 2, 3, 21], allTimePoints, allStudyFrames);
+% plot_PressureVolumes(squeeze(p(:,2,:)), v, parentDir, '-Unshifted', [1, 2, 3, 21], allTimePoints, allStudyFrames);
 
 % Save all resulting pressures and volumes
-save(sprintf('%s/pressures-volumes.mat', parentDir), 'p', 'v');
+save(sprintf('%s/pressures-volumes.mat', parentDir), 'p', 'v', 'allTimePoints', 'allStudyFrames');
 
 diary off

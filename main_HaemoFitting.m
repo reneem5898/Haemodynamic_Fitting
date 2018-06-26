@@ -21,7 +21,6 @@ function [registeredPressure, V, LVP_average_unshifted] = main_HaemoFitting(dire
 % Last modified: 20 February 2018
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
 % Whether or not to recalculate haemodynamic points and choose cycles to use again
 RECALC = 0;
 chooseCycles = 0;
@@ -276,7 +275,7 @@ while ~exist(filterMatFile, 'file')
     % Plot filtered AOP
     subplot(2,1,2)
     plot(AO_time, AO_Pressure_filtered, '-', 'markersize', 2);
-    title('Filtered Aortic Pressure_filtered');
+    title('Filtered Aortic Pressure');
     ylabel('Pressure (kPa)');
     xlabel('Time (s)');
     
@@ -298,7 +297,6 @@ end
 
 % If mat file exists, just load it with the filter cut off values
 load(filterMatFile);
-
 
 % Print to log file
 fprintf('LV pressure trace low-pass cutoff frequency: %.3f\n', cut_off_frequency(1));
@@ -445,8 +443,13 @@ if ~exist(haemoEventMatFile, 'file') || RECALC
         
         % End IVC = min(AOP)
         [~,l] = findpeaks(-AO_cycles{2,i}); % Find local minima in AOP
-        eIVC(i) = l(1); % Get first local minimum
-        %eIVC(i) = find(AO_cycles{2,i} == min(AO_cycles{2,i}));
+        
+        % If a minimum (eIVC) was found
+        if ~isempty(l)
+            eIVC(i) = l(1); % Get first local minimum
+        else % Else, save as 1 and get rid of that AOP cycle afterwards
+            eIVC(i) = 1;
+        end
         
         % ES = dicrotic notch in aortic pressure trace
         %%%%% REQUIRES USER INPUT %%%%%
@@ -457,6 +460,9 @@ if ~exist(haemoEventMatFile, 'file') || RECALC
         ES_t(i) = AO_cycles{1,i}(ES(i));
         
     end
+    
+    % Remove AOP cycles in which eIVC could not be found
+    AO_cycles(:,(eIVC == 1)) = [];
     
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -551,7 +557,7 @@ close(FH6)
 %% Get RR interval, MRI image timing and volumes
 
 % Get mean RR interval from trigger times in image header files
-%[RR_mean, TS_mean, TS_std, numFrames] = ExtractTriggerTime(MR_directory);
+%[RR_mean, TS_mean, TS_std, numFrames] = ExtractTriggerTime(model_directory);
 
 % Get RR interval from CIM model file - IF NO TRIGGER TIMES ARE AVAILABLE IN HEADER, USE THIS LINE INSTEAD :-)
 [RR_mean, numFrames] = getRR_CIM(model_directory);
@@ -599,18 +605,18 @@ end
 timepoints_MRI = [edMRI, eivcMRI, esMRI, eivrMRI, dsMRI, numFrames];
 
 % If all five timepoints are available
-if isempty(isnan(timepoints_MRI))
+if ~any(timepoints_MRI < 1)
     
     [LVP_average_unshifted, MRI_LVP_ed2eivc, MRI_LVP_eivc2es, MRI_LVP_es2eivr, MRI_LVP_eivr2ds, MRI_LVP_ds2ed] = ...
         InterpolatePressure_5Points(timepoints_MRI, LV_cycles, AO_cycles, ED, eIVC, ES, eIVR, DS, maxLVP);
 
 % If only three timepoints are available: ED, ES, and DS
-elseif length(isnan(timepoints_MRI)) == 2
+elseif length(timepoints_MRI(timepoints_MRI==0)) == 2
     
     % Just keep points which are not NaN's
-    timepoints_MRI = timepoints_MRI(~isnan(timepoints_MRI));
+    timepoints_MRI(timepoints_MRI==0) = [];
     
-    [LVP_average_unshifted, MRI_LVP_ed2es, MRI_LVP_es2ds, MRI_LVP_ds2ed] = InterpolatePressure_3Points(timepoints_MRI, LV_cycles, AO-cycles, ...
+    [LVP_average_unshifted, MRI_LVP_ed2es, MRI_LVP_es2ds, MRI_LVP_ds2ed] = InterpolatePressure_3Points(timepoints_MRI, LV_cycles, AO_cycles, ...
         ED, ES, DS, maxLVP);
     
 end
@@ -628,16 +634,16 @@ LVP_average = LVP_average_unshifted - DS_pressure; % Shifted LV pressure
 %% Create plots
 
 % If all five timepoints are available
-if isempty(isnan(timepoints_MRI))
+if length(timepoints_MRI) == 6
     
     plots_5points(timepoints_MRI, mri_time, LVP_average_unshifted, MRI_LVP_ed2eivc, ...
-        MRI_LVP_eivc2es, MRI_LVP_es2eivr, MRI_LVP_eivr2ds, MRI_LVP_ds2ed, directory);
+        MRI_LVP_eivc2es, MRI_LVP_es2eivr, MRI_LVP_eivr2ds, MRI_LVP_ds2ed, V, directory);
 
 % If only three timepoints are available: ED, ES, and DS
-elseif length(isnan(timepoints_MRI)) == 2
+elseif length(timepoints_MRI) == 4
     
     plots_3points(timepoints_MRI, mri_time, LVP_average_unshifted, MRI_LVP_ed2es, ...
-        MRI_LVP_es2ds, MRI_LVP_ds2ed, directory);
+        MRI_LVP_es2ds, MRI_LVP_ds2ed, V, directory);
     
 end
 

@@ -27,6 +27,9 @@ edMRI = timepoints_MRI(1);
 esMRI = timepoints_MRI(2);
 dsMRI = timepoints_MRI(3);
 
+% Number of frames
+numFrames = timepoints_MRI(4);
+
 % Get number of frames for each segment of the pressure curve
 num_MRI_frames_ed2es = esMRI - edMRI + 1; % Number of frames in images from ED to end ES 
 num_MRI_frames_es2ds = dsMRI - esMRI + 1; % Number of frames in images from ES to end DS 
@@ -38,7 +41,7 @@ ES_LV = zeros(size(LV_cycles,2)*size(AO_cycles,2),1); % Initialise variable to s
 % Initialise variables to save pressures at MRI frames
 % Sizes differ depending on options
 MRI_LVP_ed2es = zeros(size(LV_cycles,2)*size(AO_cycles,2), num_MRI_frames_ed2es); 
-MRI_LVP_es2ds = zeros(size(LV_cycles,2)*size(AO_cycles,2), num_MRI_frames_es2ds-1); % -1 because data will be exclusive of eivc
+MRI_LVP_es2ds = zeros(size(LV_cycles,2)*size(AO_cycles,2), num_MRI_frames_es2ds - 2); % Will exclude ES and DS points
 MRI_LVP_ds2ed = zeros(size(LV_cycles,2), num_MRI_frames_ds2ed); 
 
 for i = 1:size(LV_cycles,2)
@@ -68,15 +71,15 @@ for i = 1:size(LV_cycles,2)
         ES_LV(c) = find(abs(LVP_maxLVP2ds - AOP_ES) == min(abs(LVP_maxLVP2ds - AOP_ES))) + maxLVP(i);
          
         % Interpolate pressure at MRI image frames from ED to ES
-        pressure_ed2es = LVP_c(ED(c):ES_LV(c));
+        pressure_ed2es = LVP_c(ED(i):ES_LV(c));
         interpPressure = LinearInterpolatePressure(pressure_ed2es, length(pressure_ed2es), num_MRI_frames_ed2es);
-        MRI_LVP_ed2es(c,:) = interpPressure(2:end); % Exclude eIVC
+        MRI_LVP_ed2es(c,:) = interpPressure; % Exclude E
         
         %% ES to DS
         
         pressure_es2ds = LVP_c(ES_LV(c):DS(i));
         interpPressure = LinearInterpolatePressure(pressure_es2ds, length(pressure_es2ds), num_MRI_frames_es2ds);
-        MRI_LVP_es2ds(c,:) = interpPressure(2:end); % Exclude ES
+        MRI_LVP_es2ds(c,:) = interpPressure(2:end-1); % Exclude ES and DS
         
         % Count up
         c = c + 1;

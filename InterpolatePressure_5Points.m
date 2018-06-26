@@ -18,7 +18,8 @@ function [LV_Pressure, MRI_LVP_ed2eivc, MRI_LVP_eivc2es, MRI_LVP_es2eivr, MRI_LV
 %
 % Output: 1) LV_Pressure: vector of interpolated LV pressure trace
 %
-% Written by: Renee Miller (renee.miller@auckland.ac.nz)
+% Adapted by: Renee Miller (renee.miller@auckland.ac.nz)
+% Written by: Jenny Wang
 % Date: 22 June 2018
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -49,7 +50,7 @@ ES_LV = zeros(size(LV_cycles,2)*size(AO_cycles,2),1); % Initialise variable to s
 MRI_LVP_ed2eivc = zeros(size(LV_cycles,2)*size(AO_cycles,2), num_MRI_frames_ed2eivc); 
 MRI_LVP_eivc2es = zeros(size(LV_cycles,2)*size(AO_cycles,2), num_MRI_frames_eivc2es-1); % -1 because data will be exclusive of eivc
 MRI_LVP_es2eivr = zeros(size(LV_cycles,2)*size(AO_cycles,2), num_MRI_frames_es2eivr-1); % -1 because data will be exclusive of es
-MRI_LVP_eivr2ds = zeros(size(LV_cycles,2), num_MRI_frames_eivr2ds-2); % -1 because data will be exclusive of eivr AND ds
+MRI_LVP_eivr2ds = zeros(size(LV_cycles,2), num_MRI_frames_eivr2ds-2); % -2 because data will be exclusive of eivr AND ds
 MRI_LVP_ds2ed = zeros(size(LV_cycles,2), num_MRI_frames_ds2ed); 
 
 for i = 1:size(LV_cycles,2)
@@ -64,7 +65,7 @@ for i = 1:size(LV_cycles,2)
     % Interpolate pressure at each MRI frame between ds and ed
     pressure_eivr2ds = LVP_c(eIVR(i):DS(i)); % LV pressure between DS and ED
     interpPressure = LinearInterpolatePressure(pressure_eivr2ds, length(pressure_eivr2ds), num_MRI_frames_eivr2ds);
-    MRI_LVP_eivr2ds(i,:) = interpPressure(2:end-1); % Exclude end IVR
+    MRI_LVP_eivr2ds(i,:) = interpPressure(2:end-1); % Exclude end IVR - exclude first and last frame
     
     %% DS to ED
     
