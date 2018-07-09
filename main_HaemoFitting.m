@@ -12,18 +12,23 @@ function [registeredPressure, V, LVP_average_unshifted] = main_HaemoFitting(dire
 %         5) esMRI - end-systolic time point in MRI cine dataset
 %         6) eivcMRI - end isovolumetric contraction time point in MRI cine dataset
 %         7) eivrMRI - end isovolumetric relaxation time point in MRI cine dataset
-%         8) outPressureFile - filename for registered pressure file (THIS 
+%         8) outPressureFile - filename for registered pressure file (THIS
 % FILE IS THE WHOLE POINT OF THIS CODE)
-
+%
+% Outputs: 1) registeredPressure - registered pressure (DS = 0 kPa)
+%          2) V - volumes over cardiac cycle
+%          3) LVP_average_unishifted - registered pressure unshifted (DS != 0 kPa)
+%
 % Originally written by: Angus Cheng + Jenny Wang
 %
 % Adapted by: Renee Miller (rmil520@aucklanduni.ac.nz)
-% Last modified: 20 February 2018
+% Last modified: 26 June 2018
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Whether or not to recalculate haemodynamic points and choose cycles to use again
 RECALC = 0;
 chooseCycles = 0;
+PLOTS = 0;
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -35,29 +40,29 @@ save(cardiacEventsMRI_MatFile, 'dsMRI', 'edMRI', 'esMRI', 'eivcMRI', 'eivrMRI');
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % %% Get relevant cardiac events from MRI images - USER NEEDS TO ENTER THEM
-% 
+%
 % % Mat file to save cardiac events from MRI
 % cardiacEventsMRI_MatFile = sprintf('%s/cardiacEvents_MRI.mat', directory);
-% 
+%
 % % If mat file doesn't exist
 % if ~exist(cardiacEventsMRI_MatFile, 'file')
-%     
+%
 %     % Get user to input relvant cardiac time points
 %     prompt = {'End-diastole:', 'end IVC', 'End-systole', 'end IVR', 'Diastasis:'};
 %     dlg_title = 'Cardiac Events: MRI';
 %     num_lines = 1;
 %     answer = inputdlg(prompt, dlg_title, num_lines);
-%     
+%
 %     % Convert the string inputs to numbers
 %     edMRI = str2double(answer{1});
 %     eivcMRI = str2double(answer{2});
 %     esMRI = str2double(answer{3});
 %     eivrMRI = str2double(answer{4});
 %     dsMRI = str2double(answer{5});
-%     
+%
 %     % Save time points in mat file
 %     save(cardiacEventsMRI_MatFile, 'dsMRI', 'edMRI', 'esMRI', 'eivcMRI', 'eivrMRI');
-%     
+%
 % else
 %     % Else if it exists, use previously chosen time points
 %     load(cardiacEventsMRI_MatFile);
@@ -65,7 +70,7 @@ save(cardiacEventsMRI_MatFile, 'dsMRI', 'edMRI', 'esMRI', 'eivcMRI', 'eivrMRI');
 
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%a%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Extract data - CHANGE THIS SECTION AS NEED TO READ IN YOUR DATA
 
 % LVP and AOP file names
@@ -124,24 +129,28 @@ if length(AO_Pressure) ~= length(AO_ECG)
     AO_time = AO_time(1:minLen);
 end
 
-% Plot raw LVP
-FH = figure('Position', [100, 100, 600, 600]);
-subplot(2,1,1)
-plot(LV_time, LV_Pressure, '-', 'markersize', 2);
-title('Raw LV Pressure');
-ylabel('Pressure (mmHg)');
-xlabel('Time (ms)');
-
-% Plot raw AOP
-subplot(2,1,2)
-plot(AO_time, AO_Pressure, '-', 'markersize', 2);
-title('Raw Aortic Pressure');
-ylabel('Pressure (mmHg)');
-xlabel('Time (ms)');
-
-% Save figure
-saveas(FH, sprintf('%s/raw-pressure-traces.png', directory));
-close(FH)
+if PLOTS
+    
+    % Plot raw LVP
+    FH = figure('Position', [100, 100, 600, 600]);
+    subplot(2,1,1)
+    plot(LV_time, LV_Pressure, '-', 'markersize', 2);
+    title('Raw LV Pressure');
+    ylabel('Pressure (mmHg)');
+    xlabel('Time (ms)');
+    
+    % Plot raw AOP
+    subplot(2,1,2)
+    plot(AO_time, AO_Pressure, '-', 'markersize', 2);
+    title('Raw Aortic Pressure');
+    ylabel('Pressure (mmHg)');
+    xlabel('Time (ms)');
+    
+    % Save figure
+    saveas(FH, sprintf('%s/raw-pressure-traces.png', directory));
+    close(FH)
+    
+end
 
 
 
@@ -159,29 +168,12 @@ AO_Pressure = AO_Pressure / 7.50061561303;
 %% Create power spectrum - pressure signals
 % Plot to allow user to choose cut-off frequencies for low-pass filters
 
-% Plot power spectrum
-FH2 = figure('Position', [100, 100, 1200, 600]);
-
 %%%%%%%%%%%%%%%%%%%%%% LVP %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Fourier transform - LVP
 L = length(LV_Pressure);
 LV_NFFT = 2^nextpow2(L);
 LV_PS = fft(LV_Pressure, LV_NFFT)/L;
 LV_x_PS = LV_samplerate(1)/2*linspace(0,1,LV_NFFT/2+1);
-
-subplot(2,2,1)
-plot(LV_x_PS, 2*abs(LV_PS(1:LV_NFFT/2+1)));
-title('LVP Power Spectrum')
-ylabel('Amplitude')
-xlabel('Frequency (Hz)')
-
-% Plot zoomed in figure
-subplot(2,2,3)
-plot(LV_x_PS, 2*abs(LV_PS(1:LV_NFFT/2+1)));
-title('LVP Power Spectrum - Zoomed')
-ylabel('Amplitude')
-xlabel('Frequency (Hz)')
-xlim([0 25])
 
 %%%%%%%%%%%%%%%%%%%%%% AOP %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Fourier transform - AOP
@@ -190,23 +182,46 @@ AO_NFFT = 2^nextpow2(L);
 AO_PS = fft(AO_Pressure, AO_NFFT)/L;
 AO_x_PS = AO_samplerate(1)/2*linspace(0,1,AO_NFFT/2+1);
 
-subplot(2,2,2)
-plot(AO_x_PS, 2*abs(AO_PS(1:AO_NFFT/2+1)));
-title('AOP Power Spectrum')
-ylabel('Amplitude')
-xlabel('Frequency (Hz)')
-
-% Plot zoomed in figure
-subplot(2,2,4)
-plot(AO_x_PS, 2*abs(AO_PS(1:AO_NFFT/2+1)));
-title('AOP Power Spectrum - Zoomed')
-ylabel('Amplitude')
-xlabel('Frequency (Hz)')
-xlim([0 25])
-
-% Save figure
-saveas(FH2, sprintf('%s/pressure-power-spectra.png', directory));
-close(FH2)
+if PLOTS
+    
+    % Plot power spectrum
+    FH2 = figure('Position', [100, 100, 1200, 600]);
+    
+    % LVP
+    subplot(2,2,1)
+    plot(LV_x_PS, 2*abs(LV_PS(1:LV_NFFT/2+1)));
+    title('LVP Power Spectrum')
+    ylabel('Amplitude')
+    xlabel('Frequency (Hz)')
+    
+    % Plot zoomed in figure
+    subplot(2,2,3)
+    plot(LV_x_PS, 2*abs(LV_PS(1:LV_NFFT/2+1)));
+    title('LVP Power Spectrum - Zoomed')
+    ylabel('Amplitude')
+    xlabel('Frequency (Hz)')
+    xlim([0 25])
+    
+    % AOP
+    subplot(2,2,2)
+    plot(AO_x_PS, 2*abs(AO_PS(1:AO_NFFT/2+1)));
+    title('AOP Power Spectrum')
+    ylabel('Amplitude')
+    xlabel('Frequency (Hz)')
+    
+    % Plot zoomed in figure
+    subplot(2,2,4)
+    plot(AO_x_PS, 2*abs(AO_PS(1:AO_NFFT/2+1)));
+    title('AOP Power Spectrum - Zoomed')
+    ylabel('Amplitude')
+    xlabel('Frequency (Hz)')
+    xlim([0 25])
+    
+    % Save figure
+    saveas(FH2, sprintf('%s/pressure-power-spectra.png', directory));
+    close(FH2)
+    
+end
 
 
 
@@ -313,28 +328,31 @@ fprintf('Aortic pressure trace low-pass cutoff frequency: %.3f\n', cut_off_frequ
 % AOP
 [AO_R_positions, AO_R_times, AO_RR] = find_RR(AO_time, AO_ECG, AO_samplerate );
 
-% Plot ECG traces with R peaks
-FH4 = figure('Position', [100, 100, 600, 600]);
-subplot(2,1,1)
-plot(LV_time, LV_ECG, '-', 'markersize', 2)
-hold on
-scatter(LV_R_times, LV_ECG(LV_R_positions), 5, 'ro', 'filled')
-title('LV ECG - R Peaks');
-ylabel('Voltage (mV)');
-xlabel('Time (s)');
-
-subplot(2,1,2)
-plot(AO_time, AO_ECG, '-', 'markersize', 2)
-hold on
-scatter(AO_R_times, AO_ECG(AO_R_positions), 5, 'ro', 'filled')
-title('Aortic ECG - R Peaks');
-ylabel('Voltage (mV)');
-xlabel('Time (s)');
-
-% Save figure
-saveas(FH4, sprintf('%s/ecg-traces-r-peaks.png', directory));
-close(FH4)
-
+if PLOTS
+    
+    % Plot ECG traces with R peaks
+    FH4 = figure('Position', [100, 100, 600, 600]);
+    subplot(2,1,1)
+    plot(LV_time, LV_ECG, '-', 'markersize', 2)
+    hold on
+    scatter(LV_R_times, LV_ECG(LV_R_positions), 5, 'ro', 'filled')
+    title('LV ECG - R Peaks');
+    ylabel('Voltage (mV)');
+    xlabel('Time (s)');
+    
+    subplot(2,1,2)
+    plot(AO_time, AO_ECG, '-', 'markersize', 2)
+    hold on
+    scatter(AO_R_times, AO_ECG(AO_R_positions), 5, 'ro', 'filled')
+    title('Aortic ECG - R Peaks');
+    ylabel('Voltage (mV)');
+    xlabel('Time (s)');
+    
+    % Save figure
+    saveas(FH4, sprintf('%s/ecg-traces-r-peaks.png', directory));
+    close(FH4)
+    
+end
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -344,14 +362,14 @@ close(FH4)
 % Jenny - in St. Francis dataset, choose cycles that look like there is a pattern. There is often
 % a pattern due to respiratory wave. In this case, choose the higher pressure cycles. It's okay
 % if only a few cycles are chosen.
-% HOWEVER, for the pig data, I am choosing most all cycles and only leaving 
+% HOWEVER, for the pig data, I am choosing most all cycles and only leaving
 % out ones which are clearly different. For example, in some datasets, the ECG
 % doesn't seem to be gated and there are two pressure cycles for one R peak. That cycle
 % has been excluded since it is clearly not like the rest. In the pig data, there
 % are numerous cycles and so any differences between individual cycles will
-% be averaged out. 
+% be averaged out.
 % In general, how to choose which cycles to use and which to leave out will
-% be at the discretion of the user. 
+% be at the discretion of the user.
 
 % Mat file
 cyclesMatFile = sprintf('%s/cyclesToUse.mat', directory);
@@ -384,7 +402,7 @@ disp(AO_cycles_to_keep)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Extract all cardiac cycles
 
-% Ouptut of extract_individual_cycles.m gives a cell array containing 
+% Ouptut of extract_individual_cycles.m gives a cell array containing
 % time, pressure and ecg data for ONLY the cycles contained in LV_cycles_to_keep
 % and AO_cycles_to_keep
 
@@ -393,32 +411,36 @@ LV_cycles = extract_individual_cycles(LV_time, LV_R_positions, LV_cycles_to_keep
 % AOP
 AO_cycles = extract_individual_cycles(AO_time, AO_R_positions, AO_cycles_to_keep, AO_Pressure, AO_ECG);
 
-% Check: Overlay all LV pressure traces
-FH5 = figure('Position', [100, 100, 600, 600]);
-subplot(2,1,1)
-for i = 1:size(LV_cycles,2)
-    plot(LV_cycles{1,i}, LV_cycles{2,i}, 'b-', 'markersize', 2);
-    hold on;
+if PLOTS
+    
+    % Check: Overlay all LV pressure traces
+    FH5 = figure('Position', [100, 100, 600, 600]);
+    subplot(2,1,1)
+    for i = 1:size(LV_cycles,2)
+        plot(LV_cycles{1,i}, LV_cycles{2,i}, 'b-', 'markersize', 2);
+        hold on;
+    end
+    title('All LV Pressure Traces')
+    xlabel('Time (s)')
+    ylabel('Pressure (kPa)')
+    hold off;
+    
+    % Check: Overlay all AO pressure traces
+    subplot(2,1,2)
+    for i = 1:size(AO_cycles,2)
+        plot(AO_cycles{1,i}, AO_cycles{2,i}, 'b-', 'markersize', 2);
+        hold on;
+    end
+    title('All Aortic Pressure Traces')
+    xlabel('Time (s)')
+    ylabel('Pressure (kPa)')
+    hold off;
+    
+    % Save figure
+    saveas(FH5, sprintf('%s/all-cycles.png', directory));
+    close(FH5)
+    
 end
-title('All LV Pressure Traces')
-xlabel('Time (s)')
-ylabel('Pressure (kPa)')
-hold off;
-
-% Check: Overlay all AO pressure traces
-subplot(2,1,2)
-for i = 1:size(AO_cycles,2)
-    plot(AO_cycles{1,i}, AO_cycles{2,i}, 'b-', 'markersize', 2);
-    hold on;
-end
-title('All Aortic Pressure Traces')
-xlabel('Time (s)')
-ylabel('Pressure (kPa)')
-hold off;
-
-% Save figure
-saveas(FH5, sprintf('%s/all-cycles.png', directory));
-close(FH5)
 
 %%%%%%%%%%%%%%%%%%%%%%%% MARK CARDIAC EVENTS IN PRESSURE TRACES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -520,38 +542,41 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Plot cycles with identified landmarks
 
-% Overlay all LV pressure traces
-FH6 = figure('Position', [100, 100, 600, 600]);
-subplot(2,1,1)
-for i = 1:size(LV_cycles,2)
-    plot(LV_cycles{1,i}, LV_cycles{2,i}, 'b-', 'markersize', 2);
-    hold on;
-    scatter(LV_cycles{1,i}(DS(i)), LV_cycles{2,i}(DS(i)), 'ro', 'filled')
-    scatter(LV_cycles{1,i}(ED(i)), LV_cycles{2,i}(ED(i)), 'ro', 'filled')
-    scatter(LV_cycles{1,i}(eIVR(i)), LV_cycles{2,i}(eIVR(i)), 'ro', 'filled')
+if PLOTS
+    
+    % Overlay all LV pressure traces
+    FH6 = figure('Position', [100, 100, 600, 600]);
+    subplot(2,1,1)
+    for i = 1:size(LV_cycles,2)
+        plot(LV_cycles{1,i}, LV_cycles{2,i}, 'b-', 'markersize', 2);
+        hold on;
+        scatter(LV_cycles{1,i}(DS(i)), LV_cycles{2,i}(DS(i)), 'ro', 'filled')
+        scatter(LV_cycles{1,i}(ED(i)), LV_cycles{2,i}(ED(i)), 'ro', 'filled')
+        scatter(LV_cycles{1,i}(eIVR(i)), LV_cycles{2,i}(eIVR(i)), 'ro', 'filled')
+    end
+    title('All LV Pressure Traces with Landmarks')
+    xlabel('Time (s)')
+    ylabel('Pressure (kPa)')
+    hold off;
+    
+    % Overlay all AO pressure traces
+    subplot(2,1,2)
+    for i = 1:size(AO_cycles,2)
+        plot(AO_cycles{1,i}, AO_cycles{2,i}, 'b-', 'markersize', 2);
+        hold on;
+        scatter(AO_cycles{1,i}(eIVC(i)), AO_cycles{2,i}(eIVC(i)), 'ro', 'filled')
+        scatter(AO_cycles{1,i}(ES(i)), AO_cycles{2,i}(ES(i)), 'ro', 'filled')
+    end
+    title('All Aortic Pressure Traces with Landmarks')
+    xlabel('Time (s)')
+    ylabel('Pressure (kPa)')
+    hold off;
+    
+    % Save figure
+    saveas(FH6, sprintf('%s/all-cycles-landmarks.png', directory));
+    close(FH6)
+    
 end
-title('All LV Pressure Traces with Landmarks')
-xlabel('Time (s)')
-ylabel('Pressure (kPa)')
-hold off;
-
-% Overlay all AO pressure traces
-subplot(2,1,2)
-for i = 1:size(AO_cycles,2)
-    plot(AO_cycles{1,i}, AO_cycles{2,i}, 'b-', 'markersize', 2);
-    hold on;
-    scatter(AO_cycles{1,i}(eIVC(i)), AO_cycles{2,i}(eIVC(i)), 'ro', 'filled')
-    scatter(AO_cycles{1,i}(ES(i)), AO_cycles{2,i}(ES(i)), 'ro', 'filled')
-end
-title('All Aortic Pressure Traces with Landmarks')
-xlabel('Time (s)')
-ylabel('Pressure (kPa)')
-hold off;
-
-% Save figure
-saveas(FH6, sprintf('%s/all-cycles-landmarks.png', directory));
-close(FH6)
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Get RR interval, MRI image timing and volumes
@@ -568,7 +593,7 @@ V = getModelVolumes(model_directory, numFrames);
 
 % If ED is not the first frame, make it the first frame (fix volumes)
 if edMRI ~= 1
-
+    
     % Save old time points and old volumes for shifting data back
     timePointsOld = [edMRI, eivcMRI, esMRI, eivrMRI, dsMRI];
     V_Old = V;
@@ -584,33 +609,49 @@ if edMRI ~= 1
     esMRI = esMRI - d;
     eivrMRI = eivrMRI - d;
     dsMRI = dsMRI - d;
-end
     
+    % Add numFrames if time point is negative
+    if eivcMRI < 0
+        eivcMRI = eivcMRI + numFrames;
+    end
+    if eivrMRI < 0
+        eivrMRI = eivrMRI + numFrames;
+    end
+    if esMRI < 0
+        esMRI = esMRI + numFrames;
+    end
+    if dsMRI < 0
+        dsMRI = dsMRI + numFrames;
+    end
+end
+
 
 % % Check to see if initial and final volumes are within 2% of each other (2% chosen arbitrarily - can change)
 % V_error = abs(V(end) - V(1)); % Error between first and last frames
-% 
+%
 % if V_error > 0.02 * V(1) % If error is greater than 2%
 %    V = [V(end) V]; % Replicate last frame
 %    numFrames = numFrames + 1;
-%    
+%
 %    disp('WARNING: LV volumes were significantly different between last and first frame. The last frame was added to the beginning of the cycle.')
 % end
 
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Interpolate pressures at MRI frames 
+%% Interpolate pressures at MRI frames
 
 timepoints_MRI = [edMRI, eivcMRI, esMRI, eivrMRI, dsMRI, numFrames];
 
 % If all five timepoints are available
 if ~any(timepoints_MRI < 1)
     
+    disp('good')
+    
     [LVP_average_unshifted, MRI_LVP_ed2eivc, MRI_LVP_eivc2es, MRI_LVP_es2eivr, MRI_LVP_eivr2ds, MRI_LVP_ds2ed] = ...
         InterpolatePressure_5Points(timepoints_MRI, LV_cycles, AO_cycles, ED, eIVC, ES, eIVR, DS, maxLVP);
-
-% If only three timepoints are available: ED, ES, and DS
+    
+    % If only three timepoints are available: ED, ES, and DS
 elseif length(timepoints_MRI(timepoints_MRI==0)) == 2
     
     % Just keep points which are not NaN's
@@ -634,13 +675,13 @@ LVP_average = LVP_average_unshifted - DS_pressure; % Shifted LV pressure
 %% Create plots
 
 % If all five timepoints are available
-if length(timepoints_MRI) == 6
+if length(timepoints_MRI) == 6 && PLOTS
     
     plots_5points(timepoints_MRI, mri_time, LVP_average_unshifted, MRI_LVP_ed2eivc, ...
         MRI_LVP_eivc2es, MRI_LVP_es2eivr, MRI_LVP_eivr2ds, MRI_LVP_ds2ed, V, directory);
-
-% If only three timepoints are available: ED, ES, and DS
-elseif length(timepoints_MRI) == 4
+    
+    % If only three timepoints are available: ED, ES, and DS
+elseif length(timepoints_MRI) == 4 && PLOTS
     
     plots_3points(timepoints_MRI, mri_time, LVP_average_unshifted, MRI_LVP_ed2es, ...
         MRI_LVP_es2ds, MRI_LVP_ds2ed, V, directory);

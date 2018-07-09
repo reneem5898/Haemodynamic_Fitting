@@ -1,4 +1,4 @@
-function plot_PressureVolumes_Study(p, v, parentDir, descriptor, omit, TimePoints, StudyFrames)
+function plot_PressureVolumes_Study(p, v, parentDir, descriptor, StudyFrames)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % This function plots a) pressure-volume loops, b) plots from diastasis (DS)
@@ -9,10 +9,6 @@ function plot_PressureVolumes_Study(p, v, parentDir, descriptor, omit, TimePoint
 %         3) parentDir - directory where to save plots
 %         4) descriptor - string to attach to end of files (e.g. "Study1",
 %         "Unshifted", etc.)
-%         5) omit - studies to omit from plot if any (vector of numerical
-%         values)
-%         6) TimePoints - cell array of  values containing: 'Base', 'M1'
-%         and 'M2' corresponding to the time point of each study
 %         7) StudyFrames - vector of integers indicating the number of
 %         frames in each study
 %
@@ -34,10 +30,10 @@ FH = figure;
 for i = 1:numCases
     
     % Get pressure and volume for current study
-    volume = v(i,1:StudyFrames(i));
-    pressure = p(i,1:StudyFrames(i));
+    volume = v(i,1:StudyFrames(i,3));
+    pressure = p(i,1:StudyFrames(i,3));
     
-    if StudyFrames(i) == 30
+    if StudyFrames(i,3) == 30
         h1 = plot(volume, pressure, 'm-o', 'MarkerSize', 3, 'MarkerEdgeColor', 'm', 'MarkerFaceColor', 'm');
     else
         h2 = plot(volume, pressure, 'k-o', 'MarkerSize', 3, 'MarkerEdgeColor', 'k', 'MarkerFaceColor', 'k');
@@ -56,16 +52,27 @@ FH2 = figure;
 for i = 1:numCases
     
     % Get pressure and volume for current study
-    volume = v(i,1:StudyFrames(i));
-    pressure = p(i,1:StudyFrames(i));
+    volume = v(i,1:StudyFrames(i,3));
+    pressure = p(i,1:StudyFrames(i,3));
     
-    % Get diastasis point (minimum in LVP)
-    ds = find(pressure == min(pressure));
+    % Get diastasis and end diastolic time points
+    dsMRI = StudyFrames(i,1);
+    edMRI = StudyFrames(i,2);
     
-    if StudyFrames(i) == 30
-        h1 = plot(volume(ds:end), pressure(ds:end), 'm-o', 'MarkerSize', 3, 'MarkerEdgeColor', 'm', 'MarkerFaceColor', 'm');
+    % Get only volume and pressure during diastole: from DS to ED
+    % (inclusive)
+    if dsMRI > edMRI
+        volume_diastole = [volume(dsMRI:end), volume(1:edMRI)];
+        pressure_diastole = [pressure(dsMRI:end), pressure(1:edMRI)];
     else
-        h2 = plot(volume(ds:end), pressure(ds:end), 'k-o', 'MarkerSize', 3, 'MarkerEdgeColor', 'k', 'MarkerFaceColor', 'k');
+        volume_diastole = volume(dsMRI:edMRI);
+        pressure_diastole = pressure(dsMRI:edMRI);
+    end
+    
+    if StudyFrames(i,3) == 30
+        h1 = plot(volume_diastole, pressure_diastole, 'm-o', 'MarkerSize', 3, 'MarkerEdgeColor', 'm', 'MarkerFaceColor', 'm');
+    else
+        h2 = plot(volume_diastole, pressure_diastole, 'k-o', 'MarkerSize', 3, 'MarkerEdgeColor', 'k', 'MarkerFaceColor', 'k');
     end
     hold on
     
@@ -82,16 +89,27 @@ FH3 = figure;
 for i = 1:numCases
     
     % Get pressure and volume for current study
-    volume = v(i,1:StudyFrames(i));
-    pressure = p(i,1:StudyFrames(i));
+    volume = v(i,1:StudyFrames(i,3));
+    pressure = p(i,1:StudyFrames(i,3));
     
-    % Get diastasis point (minimum in LVP)
-    ds = find(pressure == min(pressure));
+    % Get diastasis and end diastolic time points
+    dsMRI = StudyFrames(i,1);
+    edMRI = StudyFrames(i,2);
     
-    if StudyFrames(i) == 30
-        h1 = plot(volume([ds,end]), pressure([ds,end]), 'm-o', 'MarkerSize', 3, 'MarkerEdgeColor', 'm', 'MarkerFaceColor', 'm');
+    % Get only volume and pressure during diastole: from DS to ED
+    % (inclusive)
+    if dsMRI > edMRI
+        volume_diastole = [volume(dsMRI:end), volume(1:edMRI)];
+        pressure_diastole = [pressure(dsMRI:end), pressure(1:edMRI)];
     else
-        h2 = plot(volume([ds,end]), pressure([ds,end]), 'k-o', 'MarkerSize', 3, 'MarkerEdgeColor', 'k', 'MarkerFaceColor', 'k');
+        volume_diastole = volume(dsMRI:edMRI);
+        pressure_diastole = pressure(dsMRI:edMRI);
+    end
+    
+    if StudyFrames(i,3) == 30
+        h1 = plot(volume_diastole([1,end]), pressure_diastole([1,end]), 'm-o', 'MarkerSize', 3, 'MarkerEdgeColor', 'm', 'MarkerFaceColor', 'm');
+    else
+        h2 = plot(volume_diastole([1,end]), pressure_diastole([1,end]), 'k-o', 'MarkerSize', 3, 'MarkerEdgeColor', 'k', 'MarkerFaceColor', 'k');
     end
     hold on
     
