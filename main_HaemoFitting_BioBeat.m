@@ -495,7 +495,11 @@ close(FH6)
 
 % Get RR interval from CIM model file - IF NO TRIGGER TIMES ARE AVAILABLE IN HEADER, USE THIS LINE INSTEAD :-)
 [RR_mean, numFrames] = getRR_CIM(model_directory);
-mri_time = linspace(1,RR_mean,numFrames)/1000;
+if RR_mean > 0
+    mri_time = linspace(1,RR_mean,numFrames)/1000;
+else
+    mri_time = linspace(1,1000,numFrames)/1000;
+end
 
 % Get LV model volumes
 V = getModelVolumes(model_directory, numFrames);
@@ -539,16 +543,19 @@ end
 timepoints_MRI = [edMRI, eivcMRI, esMRI, eivrMRI, dsMRI, numFrames];
 
 % If all five timepoints are available
-if ~any(timepoints_MRI < 1)
+if ~isnan(timepoints_MRI)
+%if ~any(timepoints_MRI < 1)
     
     [LVP_average_unshifted, MRI_LVP_ed2eivc, MRI_LVP_eivc2es, MRI_LVP_es2eivr, MRI_LVP_eivr2ds, MRI_LVP_ds2ed] = ...
         InterpolatePressure_5Points(timepoints_MRI, LV_cycles, AO_cycles, ED, eIVC, ES, eIVR, DS, maxLVP);
 
 % If only three timepoints are available: ED, ES, and DS
-elseif length(timepoints_MRI(timepoints_MRI==0)) == 2
+else
+%elseif length(timepoints_MRI(timepoints_MRI==0)) == 2
     
     % Just keep points which are not NaN's
-    timepoints_MRI(timepoints_MRI==0) = [];
+    %timepoints_MRI(timepoints_MRI==NaN) = [];
+    timepoints_MRI(isnan(timepoints_MRI)) = [];
     
     [LVP_average_unshifted, MRI_LVP_ed2es, MRI_LVP_es2ds, MRI_LVP_ds2ed] = InterpolatePressure_3Points(timepoints_MRI, LV_cycles, AO_cycles, ...
         ED, ES, DS, maxLVP);

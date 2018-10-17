@@ -26,8 +26,7 @@ allLines = textscan(fid, '%s %s %d %d %d %d %d');
 
 
 % Create matrix of relevant study frame info for material parameter optimisation
-%studyNamesFile = fopen(sprintf('%s/StudyNames.txt', parentDir), 'w');
-studyNamesFile = fopen(sprintf('%s/StudyNames.txt', parentDir));
+studyNamesFile = fopen(sprintf('%s/StudyNames_Haemo.txt', parentDir));
 modelNames = textscan(studyNamesFile, '%s %d %d %d %d');
 fclose(studyNamesFile);
 
@@ -70,14 +69,9 @@ for i = 1:size(allLines{1},1)
     if ~exist(directory, 'dir')
         directory = sprintf('P:/Data/OSU Models/HFPEF/%s/%s/Pressure Measurements', animal, tp);
     end
-    
-%     % CIM model directory - where to find CIM model files for specific case/volunteer/animal/etc.
-%     model_directory = sprintf('C:/AMRG/CIM_81_WARP/CIM_DATA/%s_HFPEF_%s', animal, tp);
-%     if ~exist(model_directory, 'dir')
-%         model_directory = sprintf('C:/AMRG/CIM_81_WARP/CIM_DATA/%s_HFPEF_%s+mre', animal, tp);
-%     end
-    
+   
     model_directory = sprintf('C:/AMRG/CIM_81_WARP/CIM_DATA/%s', char(modelNames{1}(i)));
+    
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %% Construct output pressure filename - for saving registered pressure
@@ -120,19 +114,27 @@ end
 % % Close study frames file
 % fclose(studyNamesFile);
 
-% Create plots for shifted and unshifted pressures
-plot_PressureVolumes(squeeze(p(:,1,:)), v, parentDir, [], [], allTimePoints, allStudyFrames);
-plot_PressureVolumes(squeeze(p(:,2,:)), v, parentDir, '-Unshifted', [36], allTimePoints, allStudyFrames);
+% % Create plots for shifted and unshifted pressures
+% plot_PressureVolumes(squeeze(p(:,1,:)), v, parentDir, [], [], allTimePoints, allStudyFrames);
+% plot_PressureVolumes(squeeze(p(:,2,:)), v, parentDir, '-Unshifted', [36], allTimePoints, allStudyFrames);
+% 
+% % Create plots - distinguishing results from each study
+% plot_PressureVolumes_Study(squeeze(p(:,1,:)), v, parentDir, [], allStudyFrames);
+% 
+% % Create plots for shifted and unshifted pressures with cases removed which
+% % had low identifiability
+% % plot_PressureVolumes(squeeze(p(:,1,:)), v, parentDir, [], [1, 2, 3, 21], allTimePoints, allStudyFrames);
+% % plot_PressureVolumes(squeeze(p(:,2,:)), v, parentDir, '-Unshifted', [1, 2, 3, 21], allTimePoints, allStudyFrames);
 
-% Create plots - distinguishing results from each study
-plot_PressureVolumes_Study(squeeze(p(:,1,:)), v, parentDir, [], allStudyFrames);
+% Save end-diastolic pressures
+EDP = squeeze(p(:,:,1));
+EDP_shifted = EDP(:,1);
+%EDP_shifted = [EDP_shifted(1:3:end), EDP_shifted(2:3:end), EDP_shifted(3:3:end)];
 
-% Create plots for shifted and unshifted pressures with cases removed which
-% had low identifiability
-% plot_PressureVolumes(squeeze(p(:,1,:)), v, parentDir, [], [1, 2, 3, 21], allTimePoints, allStudyFrames);
-% plot_PressureVolumes(squeeze(p(:,2,:)), v, parentDir, '-Unshifted', [1, 2, 3, 21], allTimePoints, allStudyFrames);
+% Save end-diastolic pressures (unshifted)
+EDP_unshifted = EDP(:,2);
 
 % Save all resulting pressures and volumes
-save(sprintf('%s/pressures-volumes.mat', parentDir), 'p', 'v', 'allTimePoints', 'allStudyFrames');
+save(sprintf('%s/pressures-volumes.mat', parentDir), 'p', 'v', 'allTimePoints', 'allStudyFrames', 'EDP_unshifted', 'EDP_shifted');
 
 diary off

@@ -510,13 +510,13 @@ if ~exist(haemoEventMatFile, 'file') || RECALC
         dLVP_dt = gradient(LV_cycles{2,i}, 1/LV_samplerate(1));
         d2LVP_dt2 = gradient(dLVP_dt, 1/LV_samplerate(1));
         
-        % Diastasis
-        middleIndex = floor(length(LV_cycles{2,i})/2);
-        DS(i) = find(LV_cycles{2,i} == min(LV_cycles{2,i}(middleIndex:end))); % Minimum pressure in second half of LVP trace
-        %DS(i) = getDS(LV_cycles{2,i});
-        
         % eIVR = POI in LVP -- RM: need citation for this.
         eIVR(i) = get_eIVR(LV_cycles{2,i}, d2LVP_dt2);
+        
+        % Diastasis
+        endIndex = ceil((length(LV_cycles{2,i}) - eIVR(i))/2) + eIVR(i);
+        DS(i) = find(LV_cycles{2,i} == min(LV_cycles{2,i}(eIVR(i):endIndex))); % Minimum pressure in second half of LVP trace
+        %DS(i) = getDS(LV_cycles{2,i});      
         
         % Peak LV pressure
         maxLVP(i) = find(LV_cycles{2,i} == max(LV_cycles{2,i}));
